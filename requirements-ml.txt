@@ -1,0 +1,6 @@
+# Only needed for training / real inference (Week 3+). YOLOv8 (ultralytics) is AGPL-3.0.
+ultralytics>=8.2
+onnxruntime>=1.17
+opencv-python-headless>=4.9
+keras>=3.0
+h5py>=3.10

@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDMS — Smart Donation Management System</title>
+  <meta name="description" content="Vision-verified, cryptographically sealed, tamper-evident cash donation counting and audit platform for Indian Currency.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <div class="app-layout" id="app-layout">
+    
+    <!-- LEFT-RAIL NAVIGATION (240px Ledger Sidebar) -->
+    <aside class="sidebar-rail" id="sidebar-rail">
+      
+      <!-- Rail Header / Branding -->
+      <div class="rail-brand" onclick="switchView('live-monitor')">
+        <div class="rail-brand-logo">₹</div>
+        <div class="rail-brand-text">
+          <div class="rail-brand-title">
+            <span>SDMS</span>
+            <span class="ledger-seal-tag">LEDGER</span>
+          </div>
+          <div class="rail-brand-sub">Smart Donation System</div>
+        </div>
+      </div>
+
+      <!-- Active Persona / Role Badge -->
+      <div class="rail-role-card" id="rail-role-card" onclick="togglePersonaDropdown()">
+        <div class="role-badge-row">
+          <span class="role-pill" id="current-role-chip">OPERATOR</span>
+          <span class="persona-switch-btn" title="Switch Role">⇄ Switch</span>
+        </div>
+        <div class="role-user-name" id="current-user-name">operator</div>
+
+        <!-- Role Switcher Popover -->
+        <div id="persona-dropdown" class="persona-dropdown hidden">
+          <div class="dropdown-header">Switch Demo Persona</div>
+          <button type="button" class="dropdown-item" onclick="quickLogin('operator')">
+            <span class="role-icon">👷‍♂️</span>
+            <div><strong>Operator</strong><small>Live Monitor & Cash</small></div>
+          </button>
+          <button type="button" class="dropdown-item" onclick="quickLogin('auditor')">
+            <span class="role-icon">🔍</span>
+            <div><strong>Auditor</strong><small>Review & Integrity</small></div>
+          </button>
+          <button type="button" class="dropdown-item" onclick="quickLogin('admin')">
+            <span class="role-icon">⚙️</span>
+            <div><strong>Administrator</strong><small>Full System Oversight</small></div>
+          </button>
+          <button type="button" class="dropdown-item" onclick="quickLogin('public')">
+            <span class="role-icon">🌐</span>
+            <div><strong>Public Portal</strong><small>Transparency View</small></div>
+          </button>
+          <div class="dropdown-divider"></div>
+          <button type="button" class="dropdown-item danger" onclick="showLoginView()">
+            <span class="role-icon">🚪</span> Sign Out / Lock
+          </button>
+        </div>
+      </div>
+
+      <!-- Primary Navigation Links (Dynamically filtered by Role) -->
+      <nav class="rail-nav" id="rail-nav-links">
+        <button type="button" class="rail-nav-btn active" id="nav-live-monitor" onclick="switchView('live-monitor')">
+          <span class="nav-icon">📹</span>
+          <span class="nav-label">Live Monitor</span>
+        </button>
+        <button type="button" class="rail-nav-btn" id="nav-scan-verify" onclick="switchView('scan-verify')">
+          <span class="nav-icon">🔬</span>
+          <span class="nav-label">Scan & Verify</span>
+        </button>
+        <button type="button" class="rail-nav-btn" id="nav-review-queue" onclick="switchView('review-queue')">
+          <span class="nav-icon">🔍</span>
+          <span class="nav-label">Review Queue</span>
+          <span class="nav-counter" id="rail-review-counter">0</span>
+        </button>
+        <button type="button" class="rail-nav-btn" id="nav-integrity" onclick="switchView('integrity')">
+          <span class="nav-icon">🛡️</span>
+          <span class="nav-label">Ledger Integrity</span>
+        </button>
+        <button type="button" class="rail-nav-btn" id="nav-reconciliation" onclick="switchView('reconciliation')">
+          <span class="nav-icon">⚖️</span>
+          <span class="nav-label">Session Close</span>
+        </button>
+        <button type="button" class="rail-nav-btn" id="nav-devices" onclick="switchView('devices')">
+          <span class="nav-icon">⚙️</span>
+          <span class="nav-label">Devices & Staff</span>
+        </button>
+        <button type="button" class="rail-nav-btn" id="nav-analytics" onclick="switchView('analytics')">
+          <span class="nav-icon">📊</span>
+          <span class="nav-label">Analytics</span>
+        </button>
+        <button type="button" class="rail-nav-btn" id="nav-public" onclick="switchView('public')">
+          <span class="nav-icon">🌐</span>
+          <span class="nav-label">Public View</span>
+        </button>
+      </nav>
+
+      <!-- Bottom Status & System Scope Rail Footer -->
+      <div class="rail-footer">
+        
+        <!-- Live Ledger Chain Health Indicator -->
+        <div class="rail-integrity-pill" id="global-integrity-pill" onclick="switchView('integrity')" title="Click to verify cryptographic ledger integrity">
+          <span class="status-dot green pulse" id="integrity-dot"></span>
+          <span class="integrity-text" id="integrity-text">Chain Sealed &amp; Valid</span>
+        </div>
+
+        <!-- System Scope Notice -->
+        <div class="rail-scope-notice" title="Scope specifications">
+          <span class="scope-icon">ℹ️</span>
+          <span class="scope-text">Coins, UPI, cheques, and counterfeit authentication are out of scope.</span>
+        </div>
+
+        <!-- Sign Out Action -->
+        <button type="button" class="rail-signout-btn" onclick="showLoginView()" title="Sign Out">
+          <span>Sign Out</span>
+          <span>→</span>
+        </button>
+      </div>
+
+    </aside>
+
+    <!-- MAIN APPLICATION WORKSPACE -->
+    <main class="main-content" id="main-content">
+
+      <!-- =========================================================
+           PAGE 1: LOGIN / PERSONA SWITCH
+           ========================================================= -->
+      <section id="view-login" class="view-section active">
+        <div class="login-view-wrapper">
+          <div class="login-card">
+            
+            <div class="login-brand-header">
+              <div class="login-seal-icon">₹</div>
+              <h1 class="login-title">SDMS Audit Ledger</h1>
+              <p class="login-caption">Smart Donation Management System · Ruled Cryptographic Ledger</p>
+            </div>
+
+            <!-- Out of Scope Explicit Disclosure Banner -->
+            <div class="scope-alert-banner">
+              <div class="scope-alert-title">System Scope &amp; Boundaries</div>
+              <p class="scope-alert-text">
+                SDMS classifies Indian currency banknotes (₹10, ₹20, ₹50, ₹100, ₹200, ₹500, ₹2000).
+                <strong>Coins, UPI, cheques, and counterfeit authentication</strong> are strictly out of scope (SDMS classifies denomination, it does not authenticate notes).
+              </p>
+            </div>
+
+            <!-- Demo Persona Fast Login Selection Grid -->
+            <div class="persona-section-title">One-Click Persona Access</div>
+            <div class="persona-switch-grid">
+              <button type="button" class="persona-chip-btn" onclick="quickLogin('operator')">
+                <span class="p-icon">👷‍♂️</span>
+                <span class="p-name">Operator</span>
+                <span class="p-role">Live Stream &amp; Monitor</span>
+              </button>
+              <button type="button" class="persona-chip-btn" onclick="quickLogin('auditor')">
+                <span class="p-icon">🔍</span>
+                <span class="p-name">Auditor</span>
+                <span class="p-role">Review Queue &amp; Ledger</span>
+              </button>
+              <button type="button" class="persona-chip-btn" onclick="quickLogin('admin')">
+                <span class="p-icon">⚙️</span>
+                <span class="p-name">Administrator</span>
+                <span class="p-role">Full System Control</span>
+              </button>
+            </div>
+
+            <div class="login-divider">
+              <span>OR ENTER CREDENTIALS</span>
+            </div>
+
+            <!-- Manual Form -->
+            <form id="login-form" onsubmit="handleManualLogin(event)">
+              <div class="form-group">
+                <label for="login-username">Username</label>
+                <input type="text" id="login-username" class="form-control" value="admin" required autocomplete="username">
+              </div>
+              <div class="form-group" style="margin-top: 0.85rem;">
+                <label for="login-password">Password</label>
+                <input type="password" id="login-password" class="form-control" value="" placeholder="Enter your password" required autocomplete="current-password">
+                <div id="login-inline-error" class="inline-error hidden">Invalid credentials. Please verify your login details.</div>
+              </div>
+              <button type="submit" class="btn-primary btn-block" style="margin-top: 1.25rem;">
+                Access Secure Session →
+              </button>
+            </form>
+
+            <div class="login-public-link">
+              <button type="button" class="btn-link" onclick="quickLogin('public')">
+                View Public Transparency Portal (No Login Required) →
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           PAGE 2: LIVE MONITOR (Operator View)
+           ========================================================= -->
+      <section id="view-live-monitor" class="view-section">
+        
+        <!-- Device Status Strip -->
+        <div class="session-header-card">
+          <div class="session-info-col">
+            <div class="session-label">DONATION BOX STATUS STRIP</div>
+            <div class="session-title-row">
+              <h2 class="session-title" id="device-box-name">Main Sanctum Box 01</h2>
+              <span class="status-chip active" id="device-online-status">● ONLINE · ACTIVE</span>
+            </div>
+            <div class="session-meta-row">
+              <span>Box ID: <strong id="live-box-id">box-01</strong></span>
+              <span class="sep">·</span>
+              <span>Session: <strong id="live-session-id">session-live</strong></span>
+              <span class="sep">·</span>
+              <span>Operator: <strong id="live-operator-name">operator</strong></span>
+              <span class="sep">·</span>
+              <span id="live-session-timer">Session: 00:34:12</span>
+            </div>
+          </div>
+          <div class="session-action-col">
+            <button type="button" class="btn-secondary" onclick="simulateDropBatch(1)">
+              ⚡ Simulate Drop
+            </button>
+            <button type="button" class="btn-secondary" onclick="simulateDropBatch(10)">
+              ⚡ Simulate 10
+            </button>
+            <button type="button" class="btn-secondary" onclick="triggerLiveUploadClick()">
+              📷 Upload Note Image
+            </button>
+            <button type="button" class="btn-secondary danger" onclick="closeCurrentSession()">
+              End Session
+            </button>
+            <input type="file" id="live-note-file-input" accept="image/*" class="file-hidden-input" onchange="handleLiveFileSelected(event)">
+          </div>
+        </div>
+
+        <!-- 2-Column Main Content: Left Column (Total, Latest Detection, Tally) & Right Column (Recent Activity) -->
+        <div class="monitor-split-grid">
+          
+          <!-- LEFT COLUMN -->
+          <div class="monitor-left-col">
+            
+            <!-- Big Running Session Total Card -->
+            <div class="ledger-card tally-total-card">
+              <div class="tally-card-caption">RUNNING SESSION TOTAL</div>
+              <div class="tally-grand-total fraunces-figure" id="live-tally-value">₹0 · Waiting for first drop</div>
+              <div class="tally-notes-count" id="live-total-notes-count-sub">
+                <span id="live-total-notes-count">0</span> notes accepted &amp; cryptographically chained · Box sensor active
+              </div>
+            </div>
+
+            <!-- Latest Detection Card -->
+            <div class="ledger-card latest-detection-card" id="latest-detection-card">
+              <div class="card-header-ruled">
+                <div class="card-header-title">
+                  <span class="pulse-indicator"></span>
+                  <span>Latest Banknote Detection</span>
+                </div>
+                <span class="badge-pill green" id="latest-decision-pill">ACCEPTED</span>
+              </div>
+
+              <!-- Optical Intake Viewport / Crop with Note Drop Target (No forbidden words in text) -->
+              <div class="detection-intake-wrapper" id="live-intake-dropzone" onclick="triggerLiveUploadClick()">
+                <div class="intake-preview-container" id="live-intake-preview-container">
+                  <canvas id="live-video-canvas" width="640" height="360" class="live-canvas-element"></canvas>
+                  <img id="live-crop-preview-img" class="live-crop-preview-img hidden" alt="Candidate Banknote Crop">
+                  <div class="bbox-overlay" id="bbox-overlay"></div>
+                </div>
+
+                <div class="intake-upload-prompt" id="live-upload-prompt">
+                  <span class="prompt-text">Click or choose currency note photo to test recognition</span>
+                </div>
+              </div>
+
+              <!-- Detection Figures & Confidence -->
+              <div class="latest-figures-row">
+                <div class="latest-denom-box">
+                  <div class="denom-caption">RECOGNIZED VALUE</div>
+                  <div class="latest-denom-val fraunces-figure" id="latest-denom-val">Waiting for drop...</div>
+                </div>
+                <div class="latest-conf-box">
+                  <div class="denom-caption">CONFIDENCE SCORE</div>
+                  <div class="conf-bar-wrapper">
+                    <div class="conf-bar-track">
+                      <div class="conf-bar-fill" id="latest-conf-fill" style="width: 0%;"></div>
+                    </div>
+                    <strong class="conf-text" id="latest-conf-text">—</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Policy Decision Notice -->
+              <div class="latest-policy-banner" id="latest-policy-notice">
+                <span>Box optical sensor ready. Drop note or upload image to classify.</span>
+              </div>
+
+              <!-- Confirm / Correct Action Buttons -->
+              <div class="latest-actions-bar">
+                <button type="button" class="btn-primary" id="btn-confirm-detection" onclick="confirmCurrentDetection()">
+                  ✓ Confirm Note
+                </button>
+                <button type="button" class="btn-secondary" id="btn-correct-detection" onclick="openCorrectionPicker()">
+                  ✎ Correct Note...
+                </button>
+              </div>
+
+            </div>
+
+            <!-- Denomination Tally Strip -->
+            <div class="ledger-card tally-strip-card">
+              <div class="tally-card-caption">DENOMINATION TALLY STRIP (SESSION)</div>
+              <div class="denom-pills-grid" id="live-denom-pills">
+                <div class="denom-pill"><span class="d-label">₹10</span><strong class="d-val" id="cnt-10">0</strong></div>
+                <div class="denom-pill"><span class="d-label">₹20</span><strong class="d-val" id="cnt-20">0</strong></div>
+                <div class="denom-pill"><span class="d-label">₹50</span><strong class="d-val" id="cnt-50">0</strong></div>
+                <div class="denom-pill"><span class="d-label">₹100</span><strong class="d-val" id="cnt-100">0</strong></div>
+                <div class="denom-pill"><span class="d-label">₹200</span><strong class="d-val" id="cnt-200">0</strong></div>
+                <div class="denom-pill"><span class="d-label">₹500</span><strong class="d-val" id="cnt-500">0</strong></div>
+                <div class="denom-pill"><span class="d-label">₹2000</span><strong class="d-val" id="cnt-2000">0</strong></div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- RIGHT COLUMN: Recent Activity List (Last 15 Events, Newest on Top) -->
+          <div class="monitor-right-col">
+            <div class="ledger-card events-feed-card">
+              <div class="card-header-ruled">
+                <div>
+                  <div class="card-header-title">Recent Activity (Last 15 Drops)</div>
+                  <div class="text-muted text-sm">Newest transactions on top · Chained to MongoDB ledger</div>
+                </div>
+                <span class="text-muted text-sm" id="live-feed-counter">0 logged</span>
+              </div>
+
+              <div class="table-container">
+                <table class="ledger-table">
+                  <thead>
+                    <tr>
+                      <th>Seq #</th>
+                      <th>Time</th>
+                      <th class="text-right">Denom</th>
+                      <th>Confidence</th>
+                      <th>Decision</th>
+                      <th>Record Hash</th>
+                    </tr>
+                  </thead>
+                  <tbody id="live-events-tbody">
+                    <tr>
+                      <td colspan="6" class="text-center text-muted">Awaiting incoming banknote events...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="feed-footer-bar">
+                <span class="text-muted text-sm">Append-only sequence strictly verified by Ed25519 signatures</span>
+                <button type="button" class="btn-sm btn-link" onclick="switchView('integrity')">
+                  View Chain Integrity →
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- =========================================================
+           PAGE 3: SCAN & VERIFY (Single & Continuous Banknote Verification)
+           ========================================================= -->
+      <section id="view-scan-verify" class="view-section">
+        
+        <div class="page-header-card">
+          <div>
+            <h2 class="page-title">Banknote Scan &amp; Verification Studio</h2>
+            <p class="page-subtitle">Multi-mode optical banknote classifier, policy decision engine, and Ed25519 sealed receipt generation.</p>
+          </div>
+          <div class="header-action-group">
+            <label class="toggle-switch-label" title="Continuously classify camera or drop feed every 2 seconds">
+              <input type="checkbox" id="scan-continuous-toggle" onchange="toggleContinuousScan(event)">
+              <span class="toggle-slider"></span>
+              <span class="toggle-text">Continuous Auto-Scan (2s)</span>
+            </label>
+            <div class="mode-pill-toggle">
+              <button type="button" class="mode-btn active" id="btn-mode-upload" onclick="setScanMode('upload')">Upload Image</button>
+              <button type="button" class="mode-btn" id="btn-mode-camera" onclick="setScanMode('camera')">Live Webcam</button>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- Scan & Verify Main 2-Column Grid -->
+        <div class="scan-verify-grid">
+          
+          <!-- Column 1: Intake Viewport & Upload Area -->
+          <div class="ledger-card scan-intake-card">
+            
+            <div class="card-header-ruled">
+              <div class="card-header-title" id="scan-mode-title">Banknote Image Intake</div>
+              <span class="text-muted text-sm" id="scan-mode-badge">Upload Mode</span>
+            </div>
+
+            <!-- Upload Drop Area (NEGATIVE CONSTRAINT COMPLIANT: NO FORBIDDEN WORDS IN TEXT) -->
+            <div class="upload-dropzone" id="scan-dropzone" onclick="triggerFileInputClick()">
+              <input type="file" id="scan-file-input" accept="image/*" class="file-hidden-input" onchange="handleFileSelected(event)">
+              
+              <div class="dropzone-content" id="dropzone-placeholder">
+                <div class="dropzone-icon">📷</div>
+                <div class="dropzone-title">Upload Indian Currency Banknote</div>
+                <div class="dropzone-sub">Click here to select an image file from your computer (PNG, JPG)</div>
+                <div class="dropzone-btn">Browse Files</div>
+              </div>
+
+              <!-- Image & Bounding Box Inspection Canvas -->
+              <div class="scan-preview-wrapper hidden" id="scan-preview-wrapper">
+                <img id="scan-preview-img" alt="Banknote Intake Preview" class="scan-preview-img">
+                <canvas id="scan-bbox-canvas" class="scan-bbox-canvas"></canvas>
+              </div>
+            </div>
+
+            <!-- Webcam Viewport (Shown when in camera mode) -->
+            <div class="camera-viewport-wrapper hidden" id="camera-viewport-wrapper">
+              <video id="scan-webcam-video" autoplay playsinline muted class="scan-webcam-video"></video>
+              <canvas id="scan-webcam-canvas" class="scan-webcam-canvas"></canvas>
+              <div class="camera-action-bar">
+                <button type="button" class="btn-primary" onclick="captureAndScanWebcam()">
+                  📸 Capture &amp; Scan Note
+                </button>
+              </div>
+            </div>
+
+            <!-- Action Trigger Bar -->
+            <div class="scan-action-bar">
+              <button type="button" class="btn-secondary" onclick="clearScanWorkspace()">
+                Reset
+              </button>
+              <button type="button" class="btn-primary" id="btn-run-scan" onclick="submitCurrentScan()">
+                Analyze Banknote →
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Column 2: Decision Policy Result & Cryptographic Receipt Generation -->
+          <div class="ledger-card scan-results-card">
+            
+            <div class="card-header-ruled">
+              <div class="card-header-title">Classification &amp; Decision Policy Engine</div>
+              <span class="badge-pill green" id="scan-decision-pill">ACCEPTED</span>
+            </div>
+
+            <!-- Prominent Decision Banner -->
+            <div class="scan-result-banner">
+              <div class="result-denom-box">
+                <div class="denom-caption">PREDICTED DENOMINATION</div>
+                <div class="denom-value fraunces-figure" id="scan-result-denom">₹500</div>
+              </div>
+              <div class="result-decision-box">
+                <div class="denom-caption">STRICT AUDIT POLICY</div>
+                <div class="policy-status-text" id="scan-result-policy-status">ACCEPTED FOR TALLY</div>
+                <div class="policy-rule-hint" id="scan-result-rule-hint">Confidence &ge; 85% · Aspect Ratio in 1.3–3.2 · Zero Overlap</div>
+              </div>
+            </div>
+
+            <!-- Decision Metrics Ruled Grid -->
+            <div class="metrics-ruled-grid">
+              <div class="metric-cell">
+                <span class="m-label">Model Confidence</span>
+                <strong class="m-val" id="scan-result-conf">98.4%</strong>
+              </div>
+              <div class="metric-cell">
+                <span class="m-label">Aspect Ratio (W/H)</span>
+                <strong class="m-val" id="scan-result-ratio">2.18 (Valid)</strong>
+              </div>
+              <div class="metric-cell">
+                <span class="m-label">IoU Conflict</span>
+                <strong class="m-val" id="scan-result-iou">0.00 (None)</strong>
+              </div>
+              <div class="metric-cell">
+                <span class="m-label">Ledger Sequence</span>
+                <strong class="m-val" id="scan-result-seq">#—</strong>
+              </div>
+            </div>
+
+            <!-- 8-Class Probability Breakdown -->
+            <div class="probabilities-container">
+              <div class="prob-header">
+                <span>Class Probability Distribution (MobileNetV2 Final):</span>
+              </div>
+              <div class="prob-bars-grid" id="scan-prob-bars">
+                <!-- Injected via JavaScript -->
+              </div>
+            </div>
+
+            <!-- Hash & Append Integrity Confirmation -->
+            <div class="block-hash-card">
+              <div class="hash-row">
+                <span class="hash-label">Record SHA-256:</span>
+                <code class="hash-val" id="scan-result-hash">—</code>
+              </div>
+              <div class="hash-row">
+                <span class="hash-label">Frame Digest:</span>
+                <code class="hash-val" id="scan-result-frame-sha">—</code>
+              </div>
+            </div>
+
+            <!-- Cryptographic Receipt Generator Card -->
+            <div class="receipt-action-card">
+              <div class="receipt-card-header">
+                <span class="rcp-title">🧾 Cryptographic Donation Receipt</span>
+                <span class="text-muted text-sm">Auditable &amp; Verified</span>
+              </div>
+              <div class="donor-input-row">
+                <input type="text" id="receipt-donor-name" class="form-control" placeholder="Donor Name (e.g. Ramesh Sharma)" value="Devotee / Donor">
+                <button type="button" class="btn-primary" onclick="generateDonationReceipt()">
+                  Accept &amp; generate receipt
+                </button>
+              </div>
+
+              <!-- Generated Receipt Display Box -->
+              <div class="receipt-display-box hidden" id="receipt-display-box">
+                <div class="receipt-badge-row">
+                  <span class="receipt-num" id="receipt-num-text">RCP-2026-0001</span>
+                  <span class="badge-pill green">SEALED IN LEDGER</span>
+                </div>
+                <div class="receipt-details-row">
+                  <div>Amount: <strong id="receipt-amount-text">₹500</strong></div>
+                  <div>Donor: <strong id="receipt-donor-text">Devotee / Donor</strong></div>
+                </div>
+                <div class="receipt-verify-buttons">
+                  <button type="button" class="btn-sm btn-outline" onclick="verifyCurrentReceipt()">
+                    Verify this transaction
+                  </button>
+                  <button type="button" class="btn-sm btn-secondary" onclick="verifyAllSessionReceipts()">
+                    Verify all transactions
+                  </button>
+                </div>
+                <div id="receipt-verify-result-badge" class="verify-feedback-banner hidden"></div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Session Receipts List (Ruled Ledger Table) -->
+        <div class="ledger-card session-receipts-card" style="margin-top: 1.5rem;">
+          <div class="card-header-ruled">
+            <div>
+              <div class="card-header-title">Session Receipts List</div>
+              <div class="text-muted text-sm">Cryptographically sealed receipts anchored to ledger events</div>
+            </div>
+            <div class="header-action-group">
+              <button type="button" class="btn-sm btn-secondary" onclick="verifyAllSessionReceipts()">
+                Verify all transactions
+              </button>
+              <button type="button" class="btn-sm btn-outline" onclick="loadSessionReceipts()">
+                Refresh Receipts
+              </button>
+            </div>
+          </div>
+          <div class="table-container">
+            <table class="ledger-table">
+              <thead>
+                <tr>
+                  <th>Receipt #</th>
+                  <th>Event Seq</th>
+                  <th class="text-right">Denomination</th>
+                  <th>Status</th>
+                  <th>Timestamp</th>
+                  <th>Ledger Hash</th>
+                  <th>Donor</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="session-receipts-tbody">
+                <tr>
+                  <td colspan="8" class="text-center text-muted">No receipts generated yet in this session.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- =========================================================
+           PAGE 4: REVIEW QUEUE (Auditor View)
+           ========================================================= -->
+      <section id="view-review-queue" class="view-section">
+        
+        <div class="page-header-card">
+          <div>
+            <h2 class="page-title">Human-in-the-Loop Review Queue</h2>
+            <p class="page-subtitle">Flagged banknotes requiring auditor oversight before entering financial tallies.</p>
+          </div>
+          <div class="header-action-group">
+            <span class="badge-pill amber" id="review-pending-badge">0 Pending Review</span>
+            <button type="button" class="btn-secondary" onclick="loadReviewQueue()">
+              Refresh Queue
+            </button>
+          </div>
+        </div>
+
+        <!-- Append-Only Audit Guarantee Notice -->
+        <div class="notice-card">
+          <div class="notice-title">🛡️ Append-Only Audit Trail Guarantee</div>
+          <p class="notice-text">
+            Resolving a review item never overwrites or mutates previous events. A cryptographically chained
+            <strong>Amendment Block</strong> is appended with an explicit <code>amends: &lt;original_id&gt;</code> reference and your auditor digital signature.
+          </p>
+        </div>
+
+        <!-- Review Queue Progress Bar -->
+        <div class="review-progress-card">
+          <div class="progress-label-row">
+            <span>Audit Completion:</span>
+            <strong id="review-progress-text">All items resolved</strong>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="review-progress-fill" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <!-- Flagged Items List -->
+        <div class="review-items-container" id="review-items-container">
+          <div class="empty-state-card">
+            <div class="empty-icon">✓</div>
+            <h3>Review Queue Clean</h3>
+            <p class="text-muted">There are no flagged banknote detections requiring auditor review at this time.</p>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- =========================================================
+           PAGE 5: LEDGER INTEGRITY (Auditor / Admin View)
+           ========================================================= -->
+      <section id="view-integrity" class="view-section">
+        
+        <div class="page-header-card">
+          <div>
+            <h2 class="page-title">Ledger Integrity &amp; Cryptographic Audit</h2>
+            <p class="page-subtitle">Continuous SHA-256 hash-chain verification and Ed25519 digital signature validation.</p>
+          </div>
+          <div class="header-action-group">
+            <button type="button" class="btn-secondary" onclick="exportExternalAnchor()">
+              Export Chain Head Anchor (.json)
+            </button>
+            <button type="button" class="btn-primary" onclick="runLedgerVerify()">
+              Re-Verify Entire Chain
+            </button>
+          </div>
+        </div>
+
+        <!-- Chain Status Banner -->
+        <div class="chain-status-card" id="chain-status-card">
+          <div class="chain-status-icon green" id="chain-status-icon">✓</div>
+          <div class="chain-status-content">
+            <div class="chain-status-title" id="chain-status-title">CRYPTOGRAPHIC CHAIN IS 100% VALID</div>
+            <p class="chain-status-desc" id="chain-status-desc">
+              All blocks verified sequentially from Genesis (0x00...00) to Chain Head. All Ed25519 signatures authentic.
+            </p>
+            <div class="chain-meta-row">
+              <span>Blocks Checked: <strong id="chain-checked-count">0</strong></span>
+              <span class="sep">·</span>
+              <span>Verification Latency: <strong id="chain-latency-ms">0.0 ms</strong></span>
+              <span class="sep">·</span>
+              <span>Last Checked: <strong id="chain-last-checked">Just now</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Tamper & Self-Healing Demonstration Lab -->
+        <div class="tamper-lab-card">
+          <div class="lab-header">
+            <div>
+              <div class="lab-title">Interactive Tamper Detection &amp; Self-Repair Lab</div>
+              <div class="lab-subtitle">Test how cryptographic chaining detects fraudulent modifications in MongoDB.</div>
+            </div>
+            <div class="lab-buttons">
+              <button type="button" class="btn-danger" onclick="triggerMaliciousTamper()">
+                Simulate Tamper (Edit MongoDB Event)
+              </button>
+              <button type="button" class="btn-outline" onclick="runLedgerVerify()">
+                Re-Verify Ledger
+              </button>
+              <button type="button" class="btn-secondary" onclick="triggerChainRepair()">
+                Self-Repair Chain
+              </button>
+            </div>
+          </div>
+          <div class="tamper-explanation-text">
+            Click <strong>Simulate Tamper</strong> to simulate a database injection attack that alters a recorded denomination in MongoDB.
+            Then click <strong>Re-Verify</strong> to observe how SHA-256 hash mismatch catches the tamper immediately and pinpoints the corrupted sequence number.
+          </div>
+        </div>
+
+        <!-- Chain Block Explorer Timeline -->
+        <div class="ledger-card">
+          <div class="card-header-ruled">
+            <div class="card-header-title">Sequential Block Explorer</div>
+            <span class="text-muted text-sm">Append-only chronological timeline</span>
+          </div>
+
+          <div class="timeline-blocks-list" id="timeline-blocks-list">
+            <!-- Injected via JavaScript -->
+          </div>
+        </div>
+
+      </section>
+
+      <!-- =========================================================
+           PAGE 6: SESSION CLOSING & CASH RECONCILIATION
+           ========================================================= -->
+      <section id="view-reconciliation" class="view-section">
+        
+        <div class="page-header-card">
+          <div>
+            <h2 class="page-title">Session Closing &amp; Cash Reconciliation</h2>
+            <p class="page-subtitle">Mathematical audit between optical ledger counts and physical bank deposit envelopes.</p>
+          </div>
+          <div class="header-action-group">
+            <button type="button" class="btn-secondary" onclick="exportReconciliationCSV()">
+              Export CSV
+            </button>
+            <button type="button" class="btn-secondary" onclick="exportReconciliationTXT()">
+              Export Audit TXT
+            </button>
+            <button type="button" class="btn-primary" onclick="closeCurrentSession()">
+              Close &amp; Seal Session
+            </button>
+          </div>
+        </div>
+
+        <!-- Session Summary Ruled Card -->
+        <div class="reconcile-summary-grid">
+          <div class="rec-metric-card">
+            <span class="rec-label">System Total Verified</span>
+            <div class="rec-value fraunces-figure" id="rec-system-total">₹0</div>
+            <span class="rec-sub" id="rec-system-notes">0 notes recorded</span>
+          </div>
+          <div class="rec-metric-card">
+            <span class="rec-label">Physical Cash Counted</span>
+            <div class="rec-value fraunces-figure" id="rec-physical-total">₹0</div>
+            <span class="rec-sub" id="rec-physical-notes">0 notes input</span>
+          </div>
+          <div class="rec-metric-card" id="rec-variance-card">
+            <span class="rec-label">Net Cash Discrepancy</span>
+            <div class="rec-value fraunces-figure" id="rec-variance-total">₹0</div>
+            <span class="rec-sub" id="rec-variance-status">Exact Match (Zero Variance)</span>
+          </div>
+        </div>
+
+        <!-- Ruled Reconciliation Table -->
+        <div class="ledger-card">
+          <div class="card-header-ruled">
+            <div class="card-header-title">Per-Denomination Audit Ruled Sheet</div>
+            <span class="text-muted text-sm">Enter physical cash counts to calculate live discrepancy</span>
+          </div>
+
+          <div class="table-container">
+            <table class="ledger-table align-right-nums">
+              <thead>
+                <tr>
+                  <th>Denomination</th>
+                  <th>System Count</th>
+                  <th>System Value (₹)</th>
+                  <th style="text-align: right;">Physical Count (Envelopes)</th>
+                  <th>Physical Value (₹)</th>
+                  <th>Unit Variance</th>
+                  <th>Cash Variance (₹)</th>
+                  <th>Audit Status</th>
+                </tr>
+              </thead>
+              <tbody id="reconcile-tbody">
+                <!-- Injected via JavaScript -->
+              </tbody>
+              <tfoot>
+                <tr class="table-total-row">
+                  <td><strong>TOTAL</strong></td>
+                  <td id="foot-sys-cnt">0</td>
+                  <td id="foot-sys-val">₹0</td>
+                  <td id="foot-phys-cnt" style="text-align: right;">0</td>
+                  <td id="foot-phys-val">₹0</td>
+                  <td id="foot-var-units">0</td>
+                  <td id="foot-var-val">₹0</td>
+                  <td id="foot-status"><span class="badge-pill green">MATCH</span></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <div class="reconcile-submit-bar">
+            <span class="text-muted text-sm">Discrepancy reports are signed and archived with permanent session metadata.</span>
+            <button type="button" class="btn-primary" onclick="submitReconciliationRecord()">
+              Confirm &amp; Record Reconciliation Audit →
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- =========================================================
+           PAGE 7: DEVICES & STAFF (Admin View)
+           ========================================================= -->
+      <section id="view-devices" class="view-section">
+        
+        <div class="page-header-card">
+          <div>
+            <h2 class="page-title">Device Fleet &amp; Authorized Personnel</h2>
+            <p class="page-subtitle">Public keys, physical receptacle boxes, and role-based access authorization.</p>
+          </div>
+          <div class="header-action-group">
+            <button type="button" class="btn-secondary" onclick="openAddDeviceModal()">
+              + Register New Box
+            </button>
+            <button type="button" class="btn-primary" onclick="openAddUserModal()">
+              + Add Authorized User
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-tables-grid">
+          
+          <!-- Registered Boxes Table -->
+          <div class="ledger-card">
+            <div class="card-header-ruled">
+              <div class="card-header-title">Donation Boxes &amp; Optical Devices</div>
+              <span class="text-muted text-sm" id="devices-count-badge">1 Box Active</span>
+            </div>
+            <div class="table-container">
+              <table class="ledger-table">
+                <thead>
+                  <tr>
+                    <th>Box ID</th>
+                    <th>Location</th>
+                    <th>Ed25519 Public Key</th>
+                    <th>Status</th>
+                    <th>Last Heartbeat</th>
+                  </tr>
+                </thead>
+                <tbody id="devices-tbody">
+                  <tr>
+                    <td><strong>box-01</strong></td>
+                    <td>Main Sanctum Donation Desk</td>
+                    <td><code class="hash-mono">9f82c4e1b8a7...</code></td>
+                    <td><span class="badge-pill green">ONLINE</span></td>
+                    <td class="text-muted">Active Stream</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Staff / Users Table -->
+          <div class="ledger-card">
+            <div class="card-header-ruled">
+              <div class="card-header-title">Authorized Personnel (RBAC)</div>
+              <span class="text-muted text-sm" id="users-count-badge">3 Users</span>
+            </div>
+            <div class="table-container">
+              <table class="ledger-table">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Access Privileges</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="users-tbody">
+                  <tr>
+                    <td><strong>admin</strong></td>
+                    <td><span class="role-pill">ADMIN</span></td>
+                    <td>Full System Control</td>
+                    <td><span class="badge-pill green">ACTIVE</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>auditor</strong></td>
+                    <td><span class="role-pill">AUDITOR</span></td>
+                    <td>Review Queue &amp; Integrity</td>
+                    <td><span class="badge-pill green">ACTIVE</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>operator</strong></td>
+                    <td><span class="role-pill">OPERATOR</span></td>
+                    <td>Live Monitor &amp; Session</td>
+                    <td><span class="badge-pill green">ACTIVE</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- =========================================================
+           PAGE 8: ANALYTICS (All Roles, Executive View)
+           ========================================================= -->
+      <section id="view-analytics" class="view-section">
+        
+        <div class="page-header-card">
+          <div>
+            <h2 class="page-title">Real-Time Ledger Analytics</h2>
+            <p class="page-subtitle">Volume metrics, model inference health, and financial distribution.</p>
+          </div>
+          <div class="header-action-group">
+            <button type="button" class="btn-secondary" onclick="refreshAnalyticsData()">
+              Refresh Charts
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 KPI Cards -->
+        <div class="kpi-cards-grid">
+          <div class="kpi-card">
+            <span class="kpi-label">TOTAL DONATIONS (INR)</span>
+            <div class="kpi-val fraunces-figure" id="analytics-total-val">₹0</div>
+            <span class="kpi-sub green">Verified in Append-Only Ledger</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">TOTAL BANKNOTES</span>
+            <div class="kpi-val fraunces-figure" id="analytics-total-notes">0</div>
+            <span class="kpi-sub">Across All Sessions</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">FIRST-PASS ACCEPTANCE</span>
+            <div class="kpi-val fraunces-figure" id="analytics-acc-rate">98.4%</div>
+            <span class="kpi-sub green">High Confidence Detections</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">PENDING AUDIT REVIEWS</span>
+            <div class="kpi-val fraunces-figure" id="analytics-pending-reviews">0</div>
+            <span class="kpi-sub amber">Awaiting Human Confirmation</span>
+          </div>
+        </div>
+
+        <!-- 2 Chart Cards Grid -->
+        <div class="charts-split-grid">
+          
+          <div class="ledger-card">
+            <div class="card-header-ruled">
+              <div class="card-header-title">Denomination Breakdown (Volume &amp; Value)</div>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="denom-distribution-chart"></canvas>
+            </div>
+          </div>
+
+          <div class="ledger-card">
+            <div class="card-header-ruled">
+              <div class="card-header-title">Model Health: Acceptance vs Review vs Rejection</div>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="model-health-chart"></canvas>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- =========================================================
+           PAGE 9: PUBLIC TRANSPARENCY PORTAL (Unauthenticated)
+           ========================================================= -->
+      <section id="view-public" class="view-section">
+        
+        <div class="public-portal-wrapper">
+          
+          <div class="public-hero-card">
+            <div class="public-seal-badge">PUBLIC TRANSPARENCY PORTAL</div>
+            <h1 class="public-hero-title">Cryptographically Audited Donation Ledger</h1>
+            <p class="public-hero-sub">
+              Every single Indian banknote offered is optically classified, signed with Ed25519 digital keys,
+              and chained with SHA-256 hashes to guarantee complete transparency and mathematical proof of trust.
+            </p>
+
+            <div class="public-grand-total-card">
+              <div class="p-total-caption">TOTAL VERIFIED PUBLIC DONATIONS</div>
+              <div class="p-total-figure fraunces-figure" id="public-total-val">₹0</div>
+              <div class="p-total-sub">
+                <span id="public-total-notes">0</span> Banknotes Processed &amp; Sealed in Ledger
+              </div>
+            </div>
+          </div>
+
+          <!-- 3 Pillars of Trust -->
+          <div class="trust-pillars-grid">
+            
+            <div class="trust-card">
+              <div class="trust-icon">🛡️</div>
+              <h3 class="trust-title">Sealed Hash-Chain</h3>
+              <p class="trust-text">
+                Every cash drop is hashed with its parent block using SHA-256 and digitally signed. Modifying any historical block breaks all subsequent links.
+              </p>
+            </div>
+
+            <div class="trust-card">
+              <div class="trust-icon">🔍</div>
+              <h3 class="trust-title">Nothing Counted Blind</h3>
+              <p class="trust-text">
+                Uncertain banknotes, folded notes, or overlapping bills are automatically held in a human review queue. Zero assumptions are made.
+              </p>
+            </div>
+
+            <div class="trust-card">
+              <div class="trust-icon">⚖️</div>
+              <h3 class="trust-title">Physical Reconciliation</h3>
+              <p class="trust-text">
+                Optical counts are audited against physical cash envelope tallies at every session closing. Any discrepancy is immediately flagged in public reports.
+              </p>
+            </div>
+
+          </div>
+
+          <!-- Public Denomination Breakdown & Chain Anchor -->
+          <div class="public-breakdown-card">
+            <div class="card-header-ruled">
+              <div class="card-header-title">Verified Banknote Breakdown by Denomination</div>
+            </div>
+
+            <div class="public-denom-grid" id="public-denom-grid">
+              <!-- Injected via JavaScript -->
+            </div>
+
+            <div class="public-anchor-row">
+              <span class="text-muted">Current Ledger Head Hash:</span>
+              <code class="hash-mono" id="public-head-hash">0000000000000000000000000000000000000000000000000000000000000000</code>
+            </div>
+
+            <!-- Out of Scope Explicit Notice -->
+            <div class="public-scope-disclaimer">
+              <strong>Scope Notice:</strong> Coins, UPI, cheques, and counterfeit authentication are out of scope.
+              SDMS classifies denomination and logs verifiable records; it does not authenticate banknote security threads or paper fibers.
+            </div>
+
+          </div>
+
+          <div class="public-footer-login-link">
+            <span>Authorized staff or auditor?</span>
+            <button type="button" class="btn-link" onclick="showLoginView()">Sign In to Audit Terminal →</button>
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- =========================================================
+       MODALS: DEVICE REGISTRATION & USER ADD
+       ========================================================= -->
+  
+  <!-- Add Box Modal -->
+  <div class="modal-backdrop hidden" id="modal-add-device">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Register New Donation Box</h3>
+        <button type="button" class="modal-close" onclick="closeAddDeviceModal()">✕</button>
+      </div>
+      <form id="form-add-box" onsubmit="submitNewBox(event)">
+        <div class="form-group">
+          <label for="box-input-id">Box Identifier (e.g. box-02)</label>
+          <input type="text" id="box-input-id" class="form-control" placeholder="box-02" required>
+        </div>
+        <div class="form-group" style="margin-top: 0.75rem;">
+          <label for="box-input-location">Location / Altar</label>
+          <input type="text" id="box-input-location" class="form-control" placeholder="North Wing Entrance" required>
+        </div>
+        <div class="form-group" style="margin-top: 0.75rem;">
+          <label for="box-input-pubkey">Ed25519 Public Key (Hex)</label>
+          <input type="text" id="box-input-pubkey" class="form-control" placeholder="9f82c4e1b8a7d03e5c7219f82c4e1b8a..." required>
+        </div>
+        <div class="modal-actions" style="margin-top: 1.25rem;">
+          <button type="button" class="btn-secondary" onclick="closeAddDeviceModal()">Cancel</button>
+          <button type="submit" class="btn-primary">Register Box</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add User Modal -->
+  <div class="modal-backdrop hidden" id="modal-add-user">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Add Authorized Personnel</h3>
+        <button type="button" class="modal-close" onclick="closeAddUserModal()">✕</button>
+      </div>
+      <form id="form-add-user" onsubmit="submitNewUser(event)">
+        <div class="form-group">
+          <label for="user-input-username">Username</label>
+          <input type="text" id="user-input-username" class="form-control" placeholder="e.g. auditor_verma" required>
+        </div>
+        <div class="form-group" style="margin-top: 0.75rem;">
+          <label for="user-input-password">Password</label>
+          <input type="password" id="user-input-password" class="form-control" placeholder="••••••••" required>
+        </div>
+        <div class="form-group" style="margin-top: 0.75rem;">
+          <label for="user-input-role">Assigned Role</label>
+          <select id="user-input-role" class="form-control">
+            <option value="operator">Operator (Live Stream &amp; Reconciliation)</option>
+            <option value="auditor">Auditor (Review Queue &amp; Integrity)</option>
+            <option value="admin">Administrator (Full Oversight)</option>
+          </select>
+        </div>
+        <div class="modal-actions" style="margin-top: 1.25rem;">
+          <button type="button" class="btn-secondary" onclick="closeAddUserModal()">Cancel</button>
+          <button type="submit" class="btn-primary">Create User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Banknote Correction Picker Modal (Signed Amendment Block) -->
+  <div class="modal-backdrop hidden" id="modal-correction-picker">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3>Correct Banknote Denomination</h3>
+          <p class="text-muted text-sm">Appends a new signed Amendment Block to the ledger (never overwrites history)</p>
+        </div>
+        <button type="button" class="modal-close" onclick="closeCorrectionPicker()">✕</button>
+      </div>
+      <div style="margin-top: 1rem;">
+        <label style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.5rem;">
+          Select Actual Denomination:
+        </label>
+        <div class="correction-picker-grid">
+          <button type="button" class="btn-denom-choice" onclick="submitCorrection('10')">₹10</button>
+          <button type="button" class="btn-denom-choice" onclick="submitCorrection('20')">₹20</button>
+          <button type="button" class="btn-denom-choice" onclick="submitCorrection('50')">₹50</button>
+          <button type="button" class="btn-denom-choice" onclick="submitCorrection('100')">₹100</button>
+          <button type="button" class="btn-denom-choice" onclick="submitCorrection('200')">₹200</button>
+          <button type="button" class="btn-denom-choice" onclick="submitCorrection('500')">₹500</button>
+          <button type="button" class="btn-denom-choice" onclick="submitCorrection('2000')">₹2000</button>
+          <button type="button" class="btn-denom-choice danger" onclick="submitCorrection('non_currency')">Reject (Non-Currency)</button>
+        </div>
+        <div class="form-group" style="margin-top: 1rem;">
+          <label for="correction-note-input">Operator Note / Rationale</label>
+          <input type="text" id="correction-note-input" class="form-control" placeholder="e.g. Visual verification confirmed ₹200 note">
+        </div>
+      </div>
+      <div class="modal-actions" style="margin-top: 1.25rem;">
+        <button type="button" class="btn-secondary" onclick="closeCorrectionPicker()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Toast Notification Banner -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Core Dashboard Logic -->
+  <script src="/static/app.js"></script>
+</body>
+</html>

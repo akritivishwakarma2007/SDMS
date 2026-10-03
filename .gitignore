@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.env
+data/*.db
+data/server.key
+data/frames/
+data/raw/
+*.pt
+*.onnx
+.venv/
+.env.example
+.env

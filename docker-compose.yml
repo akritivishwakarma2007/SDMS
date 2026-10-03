@@ -1,0 +1,16 @@
+services:
+  api:
+    build: .
+    ports: ["8000:8000"]
+    environment:
+      SDMS_JWT_SECRET: ${SDMS_JWT_SECRET:?set SDMS_JWT_SECRET in .env}
+      SDMS_ADMIN_PASSWORD: ${SDMS_ADMIN_PASSWORD:?set SDMS_ADMIN_PASSWORD in .env}
+    volumes: ["sdms-data:/data"]
+  ui:
+    build: .
+    command: ["streamlit", "run", "sdms/ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    environment: {SDMS_API: "http://api:8000"}
+    ports: ["8501:8501"]
+    depends_on: [api]
+volumes:
+  sdms-data:
